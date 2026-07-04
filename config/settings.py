@@ -163,6 +163,9 @@ SIMPLE_JWT = {
 
 # ---- Cloudinary (production image storage) ----
 # Only activates when CLOUDINARY_URL is set (e.g. in production/.env).
-# In local dev without it, Django falls back to MEDIA_ROOT above.
+# In local dev without it, Django falls back to MEDIA_ROOT above (FileSystemStorage).
 if os.getenv('CLOUDINARY_URL'):
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    STORAGES = {
+        'default': {'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    }

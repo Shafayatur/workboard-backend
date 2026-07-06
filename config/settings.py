@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -129,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # collectstatic target in production
 
 # Media files (uploaded images — dev only; production uses Cloudinary, see below)
 MEDIA_URL = 'media/'
@@ -143,6 +145,15 @@ AUTH_USER_MODEL = 'accounts.User'
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS', 'http://localhost:3000'
 ).split(',')
+
+# ---- CSRF (needed for the Django admin login form in production) ----
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin
+]
+
+# Render (and most PaaS hosts) terminate HTTPS at a proxy and forward plain
+# HTTP internally — without this, Django thinks every request is insecure.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ---- Django REST Framework ----
 REST_FRAMEWORK = {
@@ -161,11 +172,11 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
-# ---- Cloudinary (production image storage) ----
-# Only activates when CLOUDINARY_URL is set (e.g. in production/.env).
-# In local dev without it, Django falls back to MEDIA_ROOT above (FileSystemStorage).
+# ---- Storage: static files always via whitenoise; media via Cloudinary in
+# production (when CLOUDINARY_URL is set) or local disk in dev. ----
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 if os.getenv('CLOUDINARY_URL'):
-    STORAGES = {
-        'default': {'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage'},
-        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
-    }
+    STORAGES['default'] = {'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage'}

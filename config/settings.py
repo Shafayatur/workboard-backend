@@ -187,7 +187,8 @@ STORAGES = {
 if os.getenv('CLOUDINARY_URL'):
     STORAGES['default'] = {'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage'}
 
-
+# ---- Gemini (AI task parsing + shape auto-labeling) ----
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 
 
 # ---- Logging: make sure unhandled exceptions actually show up in the
